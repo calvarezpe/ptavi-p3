@@ -7,30 +7,44 @@ import smallsmilhandler
 import sys
 import os
 
-lista = sys.argv
 
-try:
-    fich = open(lista[1])
-except IndexError:
-    print "Usage: python karaoke.py file.smil."
+class KaraokeLocal(smallsmilhandler.SmallSMILHandler):
 
-parser = make_parser()
-sHandler = smallsmilhandler.SmallSMILHandler()
-parser.setContentHandler(sHandler)
-parser.parse(fich)
+    def __init__(self, fich):
+        parser = make_parser()
+        sHandler = smallsmilhandler.SmallSMILHandler()
+        parser.setContentHandler(sHandler)
+        parser.parse(fich)
+        self.list_tags = sHandler.get_tags()
 
-list_tags = sHandler.get_tags()
-list_recurso = []
+    def __str__(self):
+        todo = ""
+        for diccionarios in self.list_tags:
+            frase = ""
+            for clave in diccionarios.keys():
+                if clave != "name" and diccionarios[clave] != "":
+                    frase = frase + clave + "=" + diccionarios[clave] + "\t"
+            todo = todo + diccionarios['name'] + "\t" + frase + "\n"
+        return todo
 
-for diccionarios in list_tags:
-    frase = ""
-    for clave in diccionarios.keys():
-        if clave == "src":
-            recurso = diccionarios[clave]
-            os.system("wget -q " + recurso)
-            list_recurso = recurso.split("/")
-            recurso = list_recurso[-1]
-            diccionarios[clave] = recurso
-        if clave != "name" and diccionarios[clave] != "":
-            frase = frase + clave + "=" + diccionarios[clave] + "\t"
-    print diccionarios['name'], "\t", frase
+    def do_local(self):
+        list_recurso = []
+        for diccionarios in self.list_tags:
+            for clave in diccionarios.keys():
+                if clave == "src":
+                    recurso = diccionarios[clave]
+                    os.system("wget -q " + recurso)
+                    list_recurso = recurso.split("/")
+                    recurso = list_recurso[-1]
+                    diccionarios[clave] = recurso
+
+if __name__ == "__main__":
+    try:
+        fich = open(sys.argv[1])
+    except IndexError:
+        print "Usage: python karaoke.py file.smil."
+
+    KL = KaraokeLocal(fich)
+    print KL
+    KL.do_local()
+    print KL
